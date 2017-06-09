@@ -232,7 +232,7 @@ shinyServer(
                  subject="New simulation",
                  body = "A simulation was just submitted. Please check Dropbox",
                  smtp = list(host.name = "smtp.gmail.com", port = 465, 
-                             user.name="qsu.cer.pcori@gmail.com", passwd="@@pcfaicerS", ssl=TRUE),
+                             user.name="", passwd="", ssl=TRUE),
                  authenticate = TRUE,
                  send = TRUE) 
        
