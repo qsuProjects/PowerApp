@@ -1,0 +1,15 @@
+level,parameter,beta
+white,,ref
+black,intercept,-2.0342
+black,d1,-0.347
+black,d2,-0.3446
+black,d3,-0.3446
+black,age,0.1269
+black,bmi,0.2703
+other,intercept,-3.1485
+other,d1,-0.2758
+other,d2,-0.8861
+other,d3,-0.8861
+other,male,-0.1157
+other,age,-0.7183
+other,bmi,0.1918
