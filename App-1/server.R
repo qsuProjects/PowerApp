@@ -221,7 +221,7 @@ shinyServer(
                  body = "We received your simulation parameters. Your simulation should start 
                  running shortly and you should receive a file with results as soon as it completes",
                  smtp = list(host.name = "smtp.gmail.com", port = 465, 
-                             user.name="qsu.cer.pcori@gmail.com", passwd="@@pcfaicerS", ssl=TRUE),
+                             user.name="", passwd="", ssl=TRUE),
                  authenticate = TRUE,
                  send = TRUE) 
        
