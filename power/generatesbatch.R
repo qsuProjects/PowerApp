@@ -247,6 +247,7 @@ outfile = paste("rm_out_", 1:n.files, ".out", sep="")
 errorfile = paste("rm_out_", 1:n.files, ".err", sep="")
 write_path = paste(path, "/sbatch_files/", 1:n.files, "_out.sbatch", sep="")
 runfile_path = "" 
+n = paste( 1:n.files, sep="" )
 
 
 sbatch_params2 <- data.frame(jobname2,
@@ -261,7 +262,7 @@ sbatch_params2 <- data.frame(jobname2,
                              tasks_per_node = 1,
                              cpus_per_task = 1,
                              path_to_r_script = "/share/PI/manishad/power/simulateCEROutcome.R",
-                             args_to_r_script = paste("--args 1 ", jobname2, " " ,"'./datasets/",jobname,"_dataset_1'" ," '", .betas, "' '", .surv, "' '", .cens, "' ",.sim_folder, sep=""),
+                             args_to_r_script = paste("--args 1 ", jobname2, " " ,"'./datasets/",jobname,"_dataset_1'" ," '", .betas, "' '", .surv, "' '", .cens, "' ",.sim_folder, " ",n ,sep=""),
                              write_path,
                              stringsAsFactors = F,
                              server_sbatch_path = NA)

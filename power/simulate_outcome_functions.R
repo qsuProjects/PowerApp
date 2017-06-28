@@ -7,6 +7,8 @@
 simulateCERCovariates <- function(.covs, .betas, .surv_times = NULL, .cens_times = NULL, .id_var = "id",
                                   .rep = NULL) {
   
+  .rep <- as.numeric(.rep)
+  
   require(PermAlgo)
   require(dplyr)
   

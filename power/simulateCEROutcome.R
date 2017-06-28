@@ -25,6 +25,9 @@ name_prefix = args[2]
 # simulation file
 .sim_folder = args[7]
 
+# simulation number
+n = args[8]
+
 if(.surv == ''){.surv <- NULL}
 if(.cens == ''){.cens <- NULL}
 
@@ -58,7 +61,7 @@ getDoParWorkers()
 clusterApply(cl, seq(along=cl), function(id) WORKER.ID <<- paste0("worker_", id))
 
   
-  l_ply( c( 1:getDoParWorkers() ), .parallel=T, function(.item, .covs, .betas, .surv, .cens, name_prefix, .sim_folder) {
+  l_ply( c( 1:n), .parallel=T, function(.item, .covs, .betas, .surv, .cens, name_prefix, .sim_folder, n) {
 #  foreach( c( 1:1 ))  %dopar%  function(.covs, .betas, .surv, .cens, name_prefix, .sim_folder){
     #l_ply iterates through each element of its first argument, here c(1:1000), and passes each element to
     #function() as .item    
@@ -76,12 +79,12 @@ clusterApply(cl, seq(along=cl), function(id) WORKER.ID <<- paste0("worker_", id)
     source("simulate_outcome_functions.R", local=TRUE)
     
     setwd(paste("/share/PI/manishad/power/", .sim_folder, sep=""))
-    outcome <- simulateCERCovariates(.covs, .betas, .surv, .cens, "id", .item)
+    outcome <- simulateCERCovariates(.covs, .betas, .surv, .cens, "id", n)
     setwd(paste("/share/PI/manishad/power/",.sim_folder ,"/datasets", sep = ""))
     name_prefix= paste( name_prefix, "outcome", sep="_" )
     write.csv(outcome, name_prefix)
     
-  }, .covs, .betas, .surv, .cens, name_prefix, .sim_folder)
+  }, .covs, .betas, .surv, .cens, name_prefix, .sim_folder, n)
   
 
 
