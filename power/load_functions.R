@@ -809,8 +809,11 @@ make_result_list = function() {
 complete_parameters = function(parameters, n) {
 
   # calculate SDs for proportions based on sample size
-  parameters$across.SD[parameters$type=="normal.drug"] = sqrt( parameters$across.mean[parameters$type=="normal.drug"]
+  if(is.na(parameters$across.SD[parameters$type=="normal.drug"]))
+  {
+    parameters$across.SD[parameters$type=="normal.drug"] = sqrt( parameters$across.mean[parameters$type=="normal.drug"]
                                                                * (1-parameters$across.mean[parameters$type=="normal.drug"]) / n )
+  }
   # calculate vars based on SDs
   parameters$across.var = parameters$across.SD ^ 2
 
