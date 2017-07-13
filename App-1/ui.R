@@ -73,16 +73,6 @@ shinyUI(fluidPage(id="page",
                 downloadLink('download_param', 'Download continuous/binary covariates template', class="download_temp"),  
                 fileInput("file7", label=""), style="margin-top:-10px;"),
                
-               div(id="num",p(h5("Specification of Categorical Covariates", style="float:left;"), div(class="tt", style="margin-top:-23px; margin-left:85px;",
-                                                                                     span(class="tt_text", style="width:270px;",
-                                                                                          "The algorithm allows for one categorical variable that is defined 
-                                                                                          using a multinomial model. Provide a file with parameter effects that 
-                                                                                          describe the relationship between each category and all other covariates 
-                                                                                          and exposures. See template for an example. "))), style="margin-top:-20px;"),
-
-               div(id="num",
-               downloadLink('download_catparam', 'Download categorical covariates template', class="download_temp"),  
-               fileInput("file1", label=""), style="margin-top:-10px;"),
                
                div(id="num2", p(h5("Population Correlation", style="float:left;"),div(class="tt", 
                                                                                       span(class="tt_text", style="width:270px;",
@@ -100,8 +90,23 @@ shinyUI(fluidPage(id="page",
                                                                                             See template for example."))), style="margin-top:-20px;"),
                div(id="num2",
                downloadLink('download_wcor', 'Download wcor template', class="download_temp"),  
-               fileInput("file2", label = ""), style="margin-top:-10px;"))
+               fileInput("file2", label = ""), style="margin-top:-10px;"), 
+               
+               div(id="num",p(h5("Specification of Categorical Covariates", style="float:left;"), div(class="tt", style="margin-top:-23px; margin-left:85px;",
+                                                                                                      span(class="tt_text", style="width:270px;",
+                                                                                                           "The algorithm allows for one categorical variable that is defined 
+                                                                                                           using a multinomial model. Provide a file with parameter effects that 
+                                                                                                           describe the relationship between each category and all other covariates 
+                                                                                                           and exposures. See template for an example. "))), style="margin-top:-20px;"),
+               
+               div(id="num",
+                   downloadLink('download_catparam', 'Download categorical covariates template', class="download_temp"),  
+                   fileInput("file1", label=""), style="margin-top:-10px;")
+               
+               )
                ),
+        
+              
         
         column(3, 
                div(id="col2",p(img(src="three.png", id="img_no", width="25px", height="25px"), h4(a("Time to Event Outcome"))), 

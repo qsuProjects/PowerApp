@@ -81,7 +81,7 @@ shinyServer(
        validate(
          need(input$file6, 'Effects file (Box 3) is missing'),
          need(input$file7, 'Covariates file (Box 2) is missing'), 
-         need(input$file1, 'Cat parameters file (Box 2) is missing'),
+         #need(input$file1, 'Cat parameters file (Box 2) is missing'),
          need(input$file3, 'PCOR file (Box 2) is missing'),
          need(input$file2, 'WCOR file (Box 2) is missing'), 
          need(input$text, 'An email address must be provided'),
@@ -132,17 +132,42 @@ shinyServer(
         
         # Read normal covariates
         cov <- input$file7
-        write.csv(read.csv(cov$datapath),"parameters.csv", na = "",
+        # re-organize data
+        param <- read.csv(cov$datapath)
+        param <- rbind(param[param$type=="static.binary",], param[param$type!="static.binary",])
+        
+        # Add needed rows and columns 
+        param$name <- as.character(param$name)
+        param$type <- as.character(param$type)
+        param <- rbind(c("id", "id", NA, NA, NA, NA, NA),param)  # adding id row 
+        
+        # adding XX.var columns 
+        param$across.SD <- as.numeric(param$across.SD)
+        param$across.var <- param$across.SD**2
+        param$within.sd <- as.numeric(param$within.sd)
+        param$within.var <- param$within.sd**2
+        
+        # add categorical variables if any
+        cat_cov <- input$file1
+        if (!is.null(cat_cov))
+        {
+          cat_param <- read.csv(cat_cov$datapath)
+          levels <- as.factor(cat_param$level)
+          for(i in levels(levels)) #add cat names
+          {
+            param <- rbind(param, c(i, "cat.static", NA, NA, NA, NA, NA, NA, NA))
+          }
+          
+          write.csv(read.csv(cat_cov$datapath),"categorical_parameters.csv", na = "",
+                  row.names = FALSE,
+                  col.names = FALSE) 
+          saveData("categorical_parameters.csv",paste('Sim Data/',outputDir, sep = ""))
+        }
+        
+        write.csv(param,"parameters.csv", na = "",
                   row.names = FALSE,
                   col.names = FALSE) 
         saveData("parameters.csv",paste('Sim Data/',outputDir, sep = ""))
-        
-        # Read cat covariates
-        cat_cov <- input$file1
-        write.csv(read.csv(cat_cov$datapath),"categorical_parameters.csv", na = "",
-                  row.names = FALSE,
-                  col.names = FALSE) 
-        saveData("categorical_parameters.csv",paste('Sim Data/',outputDir, sep = ""))
         
         # Read pcor
         pcor <- input$file3
@@ -221,7 +246,7 @@ shinyServer(
                  body = "We received your simulation parameters. Your simulation should start 
                  running shortly and you should receive a file with results as soon as it completes",
                  smtp = list(host.name = "smtp.gmail.com", port = 465, 
-                             user.name="", passwd="", ssl=TRUE),
+                             user.name="qsu.cer.pcori@gmail.com", passwd="@@pcfaicerS", ssl=TRUE),
                  authenticate = TRUE,
                  send = TRUE) 
        
@@ -232,7 +257,7 @@ shinyServer(
                  subject="New simulation",
                  body = "A simulation was just submitted. Please check Dropbox",
                  smtp = list(host.name = "smtp.gmail.com", port = 465, 
-                             user.name="", passwd="", ssl=TRUE),
+                             user.name="qsu.cer.pcori@gmail.com", passwd="@@pcfaicerS", ssl=TRUE),
                  authenticate = TRUE,
                  send = TRUE) 
        
