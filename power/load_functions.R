@@ -14,8 +14,6 @@
 #  2.) Must put in "ref" as the beta for one entry in categorical parameters matrix.
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# 8:25 am
-
 ############################## LOAD PACKAGES ##############################
 
 # load packages
@@ -125,8 +123,6 @@ make_one_linear_pred = function(m, data) {
 # d: the dataset without the categorical variable
 
 add_one_categorical = function(.d, n, obs, cat.parameters) {
-  
-  #browser()
 
   # extract number of levels and names of levels
   n.levels = length( unique( cat.parameters$level ) )
@@ -156,8 +152,6 @@ add_one_categorical = function(.d, n, obs, cat.parameters) {
 
   # for reference level (last column)
   probs[,n.levels] = 1 / denoms
-  
-  #if ( any( is.na(probs) ) ) browser()
 
   # generate the categorical variable
   obs = nrow(probs)
@@ -251,10 +245,9 @@ expand_subjects = function(mus3, n.OtherNorms, n.OtherBins, n.Drugs, wcor, obs, 
     newwcorvec = upper_tri_vec(wcorin2)
 
     # create a list with a dataset (of length obs) for each subject
-    print(paste("length(normMeans)",length(normMeans)))
     dat[[s]] = mod.jointly.generate.binary.normal(no.rows=obs, no.bin=length(drugProbs), no.nor=length(normMeans),
                                                    prop.vec.bin=drugProbs, mean.vec.nor=normMeans,
-                                                   var.nor=parameters$within.var[parameters$type == "normal.other" |
+                                                   var.nor=parameters$within.var[parameters$type == "normal" |
                                                                                    parameters$type == "time.function"],
                                                    corr.vec=newwcorvec, adjust.corrs=T)
 
@@ -277,15 +270,15 @@ expand_subjects = function(mus3, n.OtherNorms, n.OtherBins, n.Drugs, wcor, obs, 
 # pcor: across-subject correlation matrix
 # wcorin: within-subject correlation matrix
 
-make_one_dataset = function(n, obs, parameters, n.Drugs, pcor, wcor, cat.parameters) {
-  
-  #browser()
+make_one_dataset = function(n, obs, parameters, n.Drugs, pcor, wcor, cat.parameters, PCORI) {
 
+  
   ### step 0.1 - extract parameter vectors from given dataframe
-  bin.props = parameters$prop[ parameters$type == "bin.other" | parameters$type == "bin.drug" ]  # = bin.props
-  nor.means = parameters$across.mean[ parameters$type %in% c("normal.drug", "normal.other", "time.function") ]  # = nor.means #6
-  across.vars = parameters$across.var[ parameters$type %in% c("normal.drug", "normal.other", "time.function") ]  # = across.vars
-  static.var.names = parameters$name[grep("static", parameters$type)]  # names of static variables
+  bin.props = parameters$prop[ parameters$type == "static.binary" ] 
+  nor.means = parameters$across.mean[ parameters$type %in% c("subject.prop", "normal", "time.function") ]  
+  across.vars = parameters$across.var[ parameters$type %in% c("subject.prop", "normal", "time.function") ]  
+  static.var.names = parameters$name[ grep("static", parameters$type) & parameters$type != "cat.static" ]  # names of static variables, but not categoricals
+  
 
   ### step 0.2 - number of different types of variables
   n.BinVars = length( bin.props )  # number binary variables (16)
@@ -294,8 +287,7 @@ make_one_dataset = function(n, obs, parameters, n.Drugs, pcor, wcor, cat.paramet
   n.OtherBins = n.BinVars - n.Drugs  # number of non-drug binary variables
   n.Vars = n.OtherBins + n.OtherNorms + n.Drugs  # total number of variables in study (not double-counting drugs)
 
-
-  ## step XX - convert population cor matrix into vectors to appease Demirtas function
+  ## step 0.3 - convert population cor matrix into vectors to appease Demirtas function
   pcor.vec = upper_tri_vec(pcor)
 
   ### step 1.0 - generate mu for each person
@@ -317,10 +309,9 @@ make_one_dataset = function(n, obs, parameters, n.Drugs, pcor, wcor, cat.paramet
 
   ### step 1.4 - "proportionize" normal drug variables (force them to be strictly between 0 and 1)
   bins = mus2[ , (n.OtherBins + 1):(n.OtherBins + n.Drugs) ]  # just binaries
-  bins.prop = proportionize(bins, zero, one)  # proportionized version of the binaries
+  bins.prop = proportionize(bins)  # proportionized version of the binaries
   mus3 = mus2
   mus3[ , (n.OtherBins + 1):(n.OtherBins + n.Drugs) ] = bins.prop
-
 
   ### step 2 - generate time-varying data for each person
   d1 = expand_subjects(mus3, n.OtherNorms, n.OtherBins, n.Drugs, wcor, obs)
@@ -329,21 +320,21 @@ make_one_dataset = function(n, obs, parameters, n.Drugs, pcor, wcor, cat.paramet
   id = rep(1:n, each=obs)
   d2 = as.data.frame( cbind(id, d1, everUserExp) )
 
-  names = c( "id", as.character(parameters$name[parameters$type=="bin.other"]),
-             as.character(parameters$name[parameters$type=="normal.drug"]),
-            as.character(parameters$name[parameters$type %in% c("normal.other", "time.function")]),
-            as.character(parameters$name[parameters$type=="bin.drug"]))
+  names = c( "id", as.character( parameters$name[ parameters$type=="static.binary" & parameters$is.drug.ever.var == 0 ] ),
+             as.character( parameters$name[ parameters$type=="subject.prop" ] ),
+            as.character( parameters$name[ parameters$type %in% c("normal", "time.function") ] ),
+            as.character( parameters$name[ parameters$is.drug.ever.var == 1 ] ) )
   names(d2) = names
 
   
   ### step 3.1 - dummy-code variables for race model
-  #d3 = add_dummy_vars(d2)
+  if (PCORI) d3 = add_dummy_vars(d2)
+  else d3 = d2
   # the above function is specific to PCORI and isn't used in the general version of the code
 
-  #browser()
-  
+
   ### step 3.2 - add a single categorical variable ###
-  d3=d2  # only use if NOT adding dummy variables above
+  #d3=d2  # only use if NOT adding dummy variables above
   if (!is.null(cat.parameters)) d4 = add_one_categorical(d3, n, obs, cat.parameters)
   else d4 = d3
 
@@ -370,7 +361,6 @@ make_one_dataset = function(n, obs, parameters, n.Drugs, pcor, wcor, cat.paramet
 
 ##### Function: longitudinally expand a matrix of single observations by subject
 # repeat each subject's entry in each row for obs number of times
-
 expand_matrix = function(.matrix, .obs) {
   library(plyr)
   cat("Expanding a matrix\n")
@@ -380,7 +370,7 @@ expand_matrix = function(.matrix, .obs) {
   
   adply(.matrix, 1, function(..subject, ..obs) {
     matrix(rep(..subject, ..obs), nrow = ..obs, byrow = TRUE)
-  }, .obs)[,-1]
+  }, .obs)[ , -1]
   
 }
 
@@ -437,6 +427,7 @@ my_model_matrix = function(var) {
 }
 
 model.matrix( ~ warpbreaks$tension)[,-1]
+
 
 ######################### FUNCTION: CREATE PROPORTION-OF-TIME-ON-DRUG DATAFRAME #########################
 
@@ -626,28 +617,38 @@ dataset_performance = function(sim, n, obs, n.Drugs, n.OtherBins, n.OtherNorms,
 # race.names: names of races
 # write.data: should R write all the generated datasets to csv files?
 
+# name_prefix: prefix for dataset csv files
+# PCORI: are we running PCORI or general simulation? (controls whether add_dummy_vars is called)
+
 
 repeat_sim = function(n, obs, parameters, cat.parameters=NULL, prop.target = NULL, mean.target = NULL, n.Drugs,
-                       pcor, wcorin, race.names, n.Reps, write.data=FALSE, write.perform=FALSE, name_prefix) {
-
-  #browser()
+                       pcor, wcorin, race.names, n.Reps, write.data=FALSE, write.perform=FALSE, name_prefix, 
+                      PCORI = FALSE ) {
 
   ##### check input #####
-  #ridiculous = which( c(n, obs, n.Drugs) < 1 )
-
   if (n < 1) stop("Value provided for n is ridiculous! \n")
   if (obs < 1) stop("Value provided for obs is ridiculous! \n")
 
   ##### extract parameters from parameter matrix #####
-  bin.props = parameters$prop[parameters$type == "bin.other" | parameters$type == "bin.drug"]  # = bin.props
-  nor.means = parameters$across.mean[ parameters$type %in% c("normal.drug", "normal.other", "time.function") ]  # = nor.means
-  across.vars = parameters$across.var[ parameters$type %in% c("normal.drug", "normal.other", "time.function") ]  # = across.vars
+  bin.props = parameters$prop[ parameters$type == "static.binary" ]  
+  nor.means = parameters$across.mean[ parameters$type %in% c("subject.prop", "normal", "time.function") ]  
+  across.vars = parameters$across.var[ parameters$type %in% c("subject.prop", "normal", "time.function") ] 
 
+  #### determine which static binaries are "ever-use" variables ####
+  # we refer to as a "drug" any variable that has both a static ever-use indicator
+  #  and a time-varying indicator
+  var.names = as.character(p$name)
+
+  # find variable names that have the "_s" suffix as the last 2 characters
+  is.drug.ever.var = vapply( var.names, FUN = function(x) substr( x, nchar(x)-1, nchar(x) ) == "_s", 
+          FUN.VALUE = -99 )
+  parameters$is.drug.ever.var = is.drug.ever.var
+  
   #### extract variable names from parameter matrix ####
-  other.bin.names = parameters$name[parameters$type=="bin.other"]
-  normal.names = parameters$name[ parameters$type %in% c("normal.other", "time.function") ]
-  drug.ever.names = parameters$name[parameters$type=="bin.drug"]
-  drug.prop.names = parameters$name[parameters$type=="normal.drug"]
+  other.bin.names = parameters$name[ parameters$type=="static.binary" & is.drug.ever.var == 0 ]
+  normal.names = parameters$name[ parameters$type %in% c("normal", "time.function") ]
+  drug.ever.names = parameters$name[ is.drug.ever.var == 1 ]
+  drug.prop.names = parameters$name[parameters$type=="subject.prop"]
 
   ### if proportion and mean performance targets aren't set, use the parameters around which we're actually generating
   #if ( is.null(prop.target) ) prop.target=bin.props
@@ -667,7 +668,7 @@ repeat_sim = function(n, obs, parameters, cat.parameters=NULL, prop.target = NUL
 
   ##### simulate data n.Reps times, adding each entry to results list #####
   for (i in 1:n.Reps) {
-    sim = make_one_dataset(n, obs, parameters, n.Drugs, pcor, wcor, cat.parameters)
+    sim = make_one_dataset( n, obs, parameters, n.Drugs, pcor, wcor, cat.parameters, PCORI=PCORI )
     cat("\n\nMade dataset", i)
 
     # DATASET PERFORMANCE STUFF - NOT IN USE
@@ -678,7 +679,7 @@ repeat_sim = function(n, obs, parameters, cat.parameters=NULL, prop.target = NUL
 
     # optionally, write the dataset to a csv file in current working directory
     if(write.data) {
-      file.name = paste(name_prefix, "dataset", i, sep="_" )
+      file.name = paste(Sys.Date(), name_prefix, "dataset", i, sep="_" )
       write.csv( sim$data, file.name )
     }
   }
@@ -809,17 +810,14 @@ make_result_list = function() {
 complete_parameters = function(parameters, n) {
 
   # calculate SDs for proportions based on sample size
-  if(is.na(parameters$across.SD[parameters$type=="normal.drug"]))
-  {
-    parameters$across.SD[parameters$type=="normal.drug"] = sqrt( parameters$across.mean[parameters$type=="normal.drug"]
-                                                               * (1-parameters$across.mean[parameters$type=="normal.drug"]) / n )
-  }
+  parameters$across.SD[parameters$type=="subject.prop"] = sqrt( parameters$across.mean[parameters$type=="subject.prop"]
+                                                               * (1-parameters$across.mean[parameters$type=="subject.prop"]) / n )
   # calculate vars based on SDs
   parameters$across.var = parameters$across.SD ^ 2
 
   # ARBITRARILY SET WITHIN-S VARIANCE TO 1/3 OF ACROSS-S VARIANCE
   # MAKE THIS MORE GENERAL - HAVE AS ARGUMENT AND ONLY DO THIS IF IT'S EMPTY
-  var.index = parameters$type %in% c("normal.other", "time.function")  # index of variables to consider
+  var.index = parameters$type %in% c("normal", "time.function")  # index of variables to consider
   within.var.vector = parameters$within.var[var.index]
   across.var.vector = parameters$across.var[var.index]
   within.var.vector[ is.na(within.var.vector) ] = across.var.vector[ is.na(within.var.vector) ] / 3
@@ -879,10 +877,3 @@ add_time_function_vars = function(d4, obs, parameters) {
   }
   return(d5)
 }
-
-
-
-
-
-
-
